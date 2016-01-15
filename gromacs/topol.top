@@ -1,0 +1,33 @@
+#define _FF_GROMACS
+
+[ defaults ]
+; nbfunc	comb-rule	gen-pairs	fudgeLJ	fudgeQQ
+  1		2		no		1.0	1.0
+
+[ atomtypes ]
+;name  at.num      mass        charge   ptype        sigma     epsilon
+    B    5      10.81100       0.000       A        0.3453      0.3971
+    N    7      14.00670       0.000       A        0.3365      0.6060
+   OWT4  8 	15.99940       0.000       A        0.3154 	0.6485
+    H    1 	 1.00800       0.000       A        0.0000      0.0000
+   IW    0       0.00000       0.000       D        0.0000      0.0000
+
+[ nonbond_params ]
+  ; i    j func        sigma     epsilon
+   B     B     1      0.3453    0.3971
+   B     N     1      0.0000    0.0000
+   B    OWT4   1      0.0000    0.0000
+   B     H     1      0.0000 	0.0000
+   B    IW     1      0.3322    0.4105
+   N     N     1      0.3365    0.6060
+   N    OWT4   1      0.0000    0.0000
+   N     H     1      0.0000 	0.0000
+   N    IW     1      0.3278 	0.5075
+  OWT4  OWT4   1      0.3154 	0.6485
+  OWT4   H     1      0.0000 	0.0000
+  OWT4  IW     1      0.0000 	0.0000
+   H     H     1      0.0000 	0.0000
+   H    IW     1      0.0000 	0.0000
+  IW    IW     1      0.0000    0.0000
+
+#include "tip4p.itp"
