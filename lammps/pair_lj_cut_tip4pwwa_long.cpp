@@ -20,7 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "pair_lj_cut_tip4p_long.h"
+#include "pair_lj_cut_tip4pwwa_long.h"
 #include "angle.h"
 #include "atom.h"
 #include "bond.h"
