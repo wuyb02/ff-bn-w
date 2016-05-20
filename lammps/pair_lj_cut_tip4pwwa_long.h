@@ -13,21 +13,21 @@
 
 #ifdef PAIR_CLASS
 
-PairStyle(lj/cut/tip4p/long,PairLJCutTIP4PLong)
+PairStyle(lj/cut/tip4pwwa/long,PairLJCutTIP4PwwaLong)
 
 #else
 
-#ifndef LMP_PAIR_LJ_CUT_TIP4P_LONG_H
-#define LMP_PAIR_LJ_CUT_TIP4P_LONG_H
+#ifndef LMP_PAIR_LJ_CUT_TIP4PWWA_LONG_H
+#define LMP_PAIR_LJ_CUT_TIP4PWWA_LONG_H
 
 #include "pair_lj_cut_coul_long.h"
 
 namespace LAMMPS_NS {
 
-class PairLJCutTIP4PLong : public PairLJCutCoulLong {
+class PairLJCutTIP4PwwaLong : public PairLJCutCoulLong {
  public:
-  PairLJCutTIP4PLong(class LAMMPS *);
-  ~PairLJCutTIP4PLong();
+  PairLJCutTIP4PwwaLong(class LAMMPS *);
+  ~PairLJCutTIP4PwwaLong();
   virtual void compute(int, int);
   void settings(int, char **);
   void init_style();

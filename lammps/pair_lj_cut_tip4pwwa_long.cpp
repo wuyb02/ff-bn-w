@@ -48,7 +48,7 @@ using namespace LAMMPS_NS;
 
 /* ---------------------------------------------------------------------- */
 
-PairLJCutTIP4PLong::PairLJCutTIP4PLong(LAMMPS *lmp) :
+PairLJCutTIP4PwwaLong::PairLJCutTIP4PwwaLong(LAMMPS *lmp) :
   PairLJCutCoulLong(lmp)
 {
   tip4pflag = 1;
@@ -70,7 +70,7 @@ PairLJCutTIP4PLong::PairLJCutTIP4PLong(LAMMPS *lmp) :
 
 /* ---------------------------------------------------------------------- */
 
-PairLJCutTIP4PLong::~PairLJCutTIP4PLong()
+PairLJCutTIP4PwwaLong::~PairLJCutTIP4PwwaLong()
 {
   memory->destroy(hneigh);
   memory->destroy(newsite);
@@ -78,7 +78,7 @@ PairLJCutTIP4PLong::~PairLJCutTIP4PLong()
 
 /* ---------------------------------------------------------------------- */
 
-void PairLJCutTIP4PLong::compute(int eflag, int vflag)
+void PairLJCutTIP4PwwaLong::compute(int eflag, int vflag)
 {
   int i,j,ii,jj,inum,jnum,itype,jtype,itable,key;
   int n,vlist[6];
@@ -135,6 +135,11 @@ void PairLJCutTIP4PLong::compute(int eflag, int vflag)
 
   // loop over neighbors of my atoms
 
+//  for (ii = 0; ii < inum; ii++) {
+//    i = ilist[ii];
+//    printf("ii=%d\t i=%d\t global=%d\t local=%d\n",ii,i,tag[i],atom->map(tag[i]));
+//  }
+
   for (ii = 0; ii < inum; ii++) {
     i = ilist[ii];
     qtmp = q[i];
@@ -152,8 +157,14 @@ void PairLJCutTIP4PLong::compute(int eflag, int vflag)
         hneigh[i][0] = iH1 = atom->map(tag[i] + 1);
         hneigh[i][1] = iH2 = atom->map(tag[i] + 2);
         hneigh[i][2] = 1;
+//        printf("i=%d, itype=%d, iH1=%d, iH2=%d\n", tag[i], itype, tag[iH1], tag[iH2]);
+//        printf("i=%d, itype=%d, iH1=%d, iH2=%d\n", i, itype, iH1, iH2);
+//        printf("\n");
         if (iH1 == -1 || iH2 == -1)
+        {
+          printf("i=%d, itype=%d, iH1=%d, iH2=%d\n", i, itype, iH1, iH2);
           error->one(FLERR,"TIP4P hydrogen is missing");
+        }
         if (atom->type[iH1] != typeH || atom->type[iH2] != typeH)
           error->one(FLERR,"TIP4P hydrogen has incorrect atom type");
         compute_newsite(x[i],x[iH1],x[iH2],newsite[i]);
@@ -185,87 +196,90 @@ void PairLJCutTIP4PLong::compute(int eflag, int vflag)
 
       jtype = type[j];
 
-      jo = false;
-      if (jtype == typeO) {
-        if (hneigh[j][0] < 0) {
-          hneigh[j][0] = jH1 = atom->map(tag[j] + 1);
-          hneigh[j][1] = jH2 = atom->map(tag[j] + 2);
-          hneigh[j][2] = 1;
-          if (jH1 == -1 || jH2 == -1)
-            error->one(FLERR,"TIP4P hydrogen is missing");
-          if (atom->type[jH1] != typeH || atom->type[jH2] != typeH)
-            error->one(FLERR,"TIP4P hydrogen has incorrect atom type");
-          compute_newsite(x[j],x[jH1],x[jH2],newsite[j]);
-        } else {
-          jH1 = hneigh[j][0];
-          jH2 = hneigh[j][1];
-          if (hneigh[j][2] == 0) {
-            hneigh[j][2] = 1;
-            compute_newsite(x[j],x[jH1],x[jH2],newsite[j]);
-          }
-        }
-        x2 = newsite[j];
-        jo = true;
-      } else x2 = x[j];
-
-      // LJ interaction based on true rsq
-      delxlj = delx;
-      delylj = dely;
-      delzlj = delz;
-
-      if (io!=jo)
-      {
-	jw = false;
-	iw = false;
-        if(io)
-        {
-          int wii;
-          for(wii=0; wii<nwtype && jtype!=typeW[wii]; wii++);
-          if(wii<nwtype) jw = true;
-        }
-        if(jo)
-        {
-          int wii;
-          for(wii=0; wii<nwtype && itype!=typeW[wii]; wii++);
-          if(wii<nwtype) iw = true;
-        }
-	if(iw || jw)
-	  {
-	    delxlj = x1[0] - x2[0];
-	    delylj = x1[1] - x2[1];
-	    delzlj = x1[2] - x2[2];
-	  }
-      }
-
-      rsqlj = delxlj*delxlj + delylj*delylj + delzlj*delzlj;
-
-      if (rsqlj < cut_ljsq[itype][jtype]) {
-        r2inv = 1.0/rsqlj;
-        r6inv = r2inv*r2inv*r2inv;
-        forcelj = r6inv * (lj1[itype][jtype]*r6inv - lj2[itype][jtype]);
-        forcelj *= factor_lj * r2inv;
-
-        f[i][0] += delxlj*forcelj;
-        f[i][1] += delylj*forcelj;
-        f[i][2] += delzlj*forcelj;
-        f[j][0] -= delxlj*forcelj;
-        f[j][1] -= delylj*forcelj;
-        f[j][2] -= delzlj*forcelj;
-
-        if (eflag) {
-          evdwl = r6inv*(lj3[itype][jtype]*r6inv-lj4[itype][jtype]) -
-            offset[itype][jtype];
-          evdwl *= factor_lj;
-        } else evdwl = 0.0;
-
-        if (evflag) ev_tally(i,j,nlocal,newton_pair,
-                             evdwl,0.0,forcelj,delxlj,delylj,delzlj);
-      }
-
-      // adjust rsq and delxyz for off-site O charge(s) if necessary
-      // but only if they are within reach
-
       if (rsq < cut_coulsqplus) {
+        jo = false;
+        if (jtype == typeO) {
+          if (hneigh[j][0] < 0) {
+            hneigh[j][0] = jH1 = atom->map(tag[j] + 1);
+            hneigh[j][1] = jH2 = atom->map(tag[j] + 2);
+            hneigh[j][2] = 1;
+            if (jH1 == -1 || jH2 == -1)
+            {
+              printf("j=%d, jtype=%d, jH1=%d, jH2=%d\n", j, jtype, jH1, jH2);
+              error->one(FLERR,"TIP4P hydrogen is missing");
+            }
+            if (atom->type[jH1] != typeH || atom->type[jH2] != typeH)
+              error->one(FLERR,"TIP4P hydrogen has incorrect atom type");
+            compute_newsite(x[j],x[jH1],x[jH2],newsite[j]);
+          } else {
+            jH1 = hneigh[j][0];
+            jH2 = hneigh[j][1];
+            if (hneigh[j][2] == 0) {
+              hneigh[j][2] = 1;
+              compute_newsite(x[j],x[jH1],x[jH2],newsite[j]);
+            }
+          }
+          x2 = newsite[j];
+          jo = true;
+        } else x2 = x[j];
+
+        // LJ interaction based on true rsq
+        delxlj = delx;
+        delylj = dely;
+        delzlj = delz;
+  
+        if (io!=jo)
+        {
+  	jw = false;
+  	iw = false;
+          if(io)
+          {
+            int wii;
+            for(wii=0; wii<nwtype && jtype!=typeW[wii]; wii++);
+            if(wii<nwtype) jw = true;
+          }
+          if(jo)
+          {
+            int wii;
+            for(wii=0; wii<nwtype && itype!=typeW[wii]; wii++);
+            if(wii<nwtype) iw = true;
+          }
+  	if(iw || jw)
+  	  {
+  	    delxlj = x1[0] - x2[0];
+  	    delylj = x1[1] - x2[1];
+  	    delzlj = x1[2] - x2[2];
+  	  }
+        }
+  
+        rsqlj = delxlj*delxlj + delylj*delylj + delzlj*delzlj;
+  
+        if (rsqlj < cut_ljsq[itype][jtype]) {
+          r2inv = 1.0/rsqlj;
+          r6inv = r2inv*r2inv*r2inv;
+          forcelj = r6inv * (lj1[itype][jtype]*r6inv - lj2[itype][jtype]);
+          forcelj *= factor_lj * r2inv;
+  
+          f[i][0] += delxlj*forcelj;
+          f[i][1] += delylj*forcelj;
+          f[i][2] += delzlj*forcelj;
+          f[j][0] -= delxlj*forcelj;
+          f[j][1] -= delylj*forcelj;
+          f[j][2] -= delzlj*forcelj;
+  
+          if (eflag) {
+            evdwl = r6inv*(lj3[itype][jtype]*r6inv-lj4[itype][jtype]) -
+              offset[itype][jtype];
+            evdwl *= factor_lj;
+          } else evdwl = 0.0;
+  
+          if (evflag) ev_tally(i,j,nlocal,newton_pair,
+                               evdwl,0.0,forcelj,delxlj,delylj,delzlj);
+        }
+  
+        // adjust rsq and delxyz for off-site O charge(s) if necessary
+        // but only if they are within reach
+
         if (itype == typeO || jtype == typeO) {
 
           // if atom J = water O, set x2 = offset charge site
@@ -457,10 +471,9 @@ void PairLJCutTIP4PLong::compute(int eflag, int vflag)
    global settings
 ------------------------------------------------------------------------- */
 
-void PairLJCutTIP4PLong::settings(int narg, char **arg)
+void PairLJCutTIP4PwwaLong::settings(int narg, char **arg)
 {
-
-  if (narg < 9) error->all(FLERR,"pair tip4p_yw minimum 9 paramters needed!\n");
+  if (narg < 9) error->all(FLERR,"pair tip4pwwa minimum 9 parameters needed!\n");
 
   typeO = force->inumeric(FLERR,arg[0]);
   typeH = force->inumeric(FLERR,arg[1]);
@@ -473,9 +486,9 @@ void PairLJCutTIP4PLong::settings(int narg, char **arg)
   // reset cutoffs that have been explicitly set
   nwtype = force->inumeric(FLERR,arg[7]);
 
-  if (nwtype < 1) error->all(FLERR,"tip4p_yw requires at least one wall atom type\n");
+  if (nwtype < 1) error->all(FLERR,"tip4pwwa requires at least one wall atom type\n");
 
-  if (narg < 8+nwtype) error->all(FLERR,"not enough parameters for pair tip4p_yw, check number wall types specified\n");
+  if (narg < 8+nwtype) error->all(FLERR,"not enough parameters for pair tip4pwwa, check number wall types specified\n");
 
   typeW = new int[nwtype];
   for(int i=0; i<nwtype; i++)
@@ -495,16 +508,16 @@ void PairLJCutTIP4PLong::settings(int narg, char **arg)
    init specific to this pair style
 ------------------------------------------------------------------------- */
 
-void PairLJCutTIP4PLong::init_style()
+void PairLJCutTIP4PwwaLong::init_style()
 {
   if (atom->tag_enable == 0)
-    error->all(FLERR,"Pair style lj/cut/tip4p/long requires atom IDs");
+    error->all(FLERR,"Pair style lj/cut/tip4pwwa/long requires atom IDs");
   if (!force->newton_pair)
     error->all(FLERR,
-               "Pair style lj/cut/tip4p/long requires newton pair on");
+               "Pair style lj/cut/tip4pwwa/long requires newton pair on");
   if (!atom->q_flag)
     error->all(FLERR,
-               "Pair style lj/cut/tip4p/long requires atom attribute q");
+               "Pair style lj/cut/tip4pwwa/long requires atom attribute q");
   if (force->bond == NULL)
     error->all(FLERR,"Must use a bond style with TIP4P potential");
   if (force->angle == NULL)
@@ -523,7 +536,7 @@ void PairLJCutTIP4PLong::init_style()
    init for one type pair i,j and corresponding j,i
 ------------------------------------------------------------------------- */
 
-double PairLJCutTIP4PLong::init_one(int i, int j)
+double PairLJCutTIP4PwwaLong::init_one(int i, int j)
 {
   double cut = PairLJCutCoulLong::init_one(i,j);
 
@@ -534,7 +547,7 @@ double PairLJCutTIP4PLong::init_one(int i, int j)
   if ((i == typeH && epsilon[i][i] != 0.0) ||
       (j == typeH && epsilon[j][j] != 0.0))
     error->all(FLERR,"Water H epsilon must be 0.0 for "
-               "pair style lj/cut/tip4p/long");
+               "pair style lj/cut/tip4pwwa/long");
 
   if (i == typeH || j == typeH)
     cut_ljsq[j][i] = cut_ljsq[i][j] = 0.0;
@@ -546,7 +559,7 @@ double PairLJCutTIP4PLong::init_one(int i, int j)
   proc 0 writes to restart file
 ------------------------------------------------------------------------- */
 
-void PairLJCutTIP4PLong::write_restart_settings(FILE *fp)
+void PairLJCutTIP4PwwaLong::write_restart_settings(FILE *fp)
 {
   fwrite(&typeO,sizeof(int),1,fp);
   fwrite(&typeH,sizeof(int),1,fp);
@@ -567,7 +580,7 @@ void PairLJCutTIP4PLong::write_restart_settings(FILE *fp)
   proc 0 reads from restart file, bcasts
 ------------------------------------------------------------------------- */
 
-void PairLJCutTIP4PLong::read_restart_settings(FILE *fp)
+void PairLJCutTIP4PwwaLong::read_restart_settings(FILE *fp)
 {
   if (comm->me == 0) {
     fread(&typeO,sizeof(int),1,fp);
@@ -605,7 +618,7 @@ void PairLJCutTIP4PLong::read_restart_settings(FILE *fp)
   return it as xM
 ------------------------------------------------------------------------- */
 
-void PairLJCutTIP4PLong::compute_newsite(double *xO, double *xH1,
+void PairLJCutTIP4PwwaLong::compute_newsite(double *xO, double *xH1,
                                          double *xH2, double *xM)
 {
   double delx1 = xH1[0] - xO[0];
@@ -625,7 +638,7 @@ void PairLJCutTIP4PLong::compute_newsite(double *xO, double *xH1,
 
 /* ---------------------------------------------------------------------- */
 
-void *PairLJCutTIP4PLong::extract(const char *str, int &dim)
+void *PairLJCutTIP4PwwaLong::extract(const char *str, int &dim)
 {
   dim = 0;
   if (strcmp(str,"qdist") == 0) return (void *) &qdist;
@@ -633,7 +646,10 @@ void *PairLJCutTIP4PLong::extract(const char *str, int &dim)
   if (strcmp(str,"typeH") == 0) return (void *) &typeH;
   if (strcmp(str,"typeA") == 0) return (void *) &typeA;
   if (strcmp(str,"typeB") == 0) return (void *) &typeB;
+  if (strcmp(str,"nwtype") == 0) return (void *) &nwtype;
   if (strcmp(str,"cut_coul") == 0) return (void *) &cut_coul;
+  dim = 1;
+  if (strcmp(str,"typeW") == 0) return (void *) typeW;
   dim = 2;
   if (strcmp(str,"epsilon") == 0) return (void *) epsilon;
   if (strcmp(str,"sigma") == 0) return (void *) sigma;
@@ -644,7 +660,7 @@ void *PairLJCutTIP4PLong::extract(const char *str, int &dim)
    memory usage of hneigh
 ------------------------------------------------------------------------- */
 
-double PairLJCutTIP4PLong::memory_usage()
+double PairLJCutTIP4PwwaLong::memory_usage()
 {
   double bytes = maxeatom * sizeof(double);
   bytes += maxvatom*6 * sizeof(double);
