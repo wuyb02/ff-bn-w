@@ -5,9 +5,11 @@ Put "pair_lj_cut_tip4pwwa_long.h" and "pair_lj_cut_tip4pwwa_long.cpp" at the LAM
 Recompile lammps
 
 **The pair style is defined as**: 
+
 pair_style lj/cut/tip4pwwa/long otype htype btype atype qhist ljcut qcut nwtype wtype1 wtype2 … wtypenw
 
 **Syntax**
+
 otype, htype = atom types for TIP4P O and H
 
 bytpe, atype = bond and angle types for TIP4P waters
