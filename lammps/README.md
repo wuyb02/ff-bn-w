@@ -25,9 +25,11 @@ nwtype = number of types of atoms that interact with M, not O, in computing the 
 wtype1, wtype2, …, wtypenw = types of atoms that interact with M, not O, in computing the LJ interaction
 
 **Example**
+
 Pair_style lj/cut/tip4pwwa/long 3 4 1 1 0.15 14.0 14.0 2 1 2
 
 **An example input file for using the parameters**
+
 pair_style    lj/cut/tip4p/long 3 4 1 1 0.15 14.0 14.0 2 1 2
 
 pair_coeff      1 1  0.0949 3.453       # B-B
