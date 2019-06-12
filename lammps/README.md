@@ -42,3 +42,5 @@ angle_coeff     1 2.385 104.5199
 group           fluidmols type 3 4
 
 fix 1 fluidmols shake 0.0001 20 0 b 1 a 1
+
+ 
